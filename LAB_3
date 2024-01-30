@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash Table GUI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f8f8f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #e6e6e6;
+        }
+        
+        button {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        
+        input,
+        select {
+            margin-bottom: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: 100%;
+            /* Make inputs and selects full width */
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <h2>Hash Table GUI</h2>
+
+    <input type="text" id="dayInput" placeholder="Day" readonly>
+    <input type="text" id="dateInput" placeholder="Date" readonly>
+    <input type="text" id="temperatureInput" placeholder="Temperature">
+    <input type="text" id="heartRateInput" placeholder="Heart Rate">
+    <input type="text" id="humidityInput" placeholder="Humidity">
+    <input type="text" id="bloodPressureInput" placeholder="Blood Pressure">
+    <br>
+    <button onclick="registerEntry()">Register Entry</button>
+    <button onclick="appendEntry()">Append Entry</button>
+    <button onclick="editEntry()">Edit Entry</button>
+    <button onclick="showTable()">Show Table</button>
+
+    <!-- Add the select dropdown for keys -->
+    <select id="keySelect">
+    <option value="day">Day</option>
+    <option value="date">Date</option>
+    <option value="temperature">Temperature</option>
+    <option value="heartRate">Heart Rate</option>
+    <option value="humidity">Humidity</option>
+    <option value="bloodPressure">Blood Pressure</option>
+  </select>
+
+    <button onclick="queryEntry()">Query Entry</button>
+
+    <div id="tableContainer"></div>
+
+    <script>
+        // Retrieve previous entries from local storage or initialize an empty object
+        const storedData = localStorage.getItem('hashTable');
+        const hashTable = storedData ? JSON.parse(storedData) : {};
+
+        // Set the initial values for day and date based on the system date
+        const currentDate = new Date();
+        document.getElementById('dayInput').value = getDayOfWeek(currentDate.getDay());
+        document.getElementById('dateInput').value = currentDate.toISOString().split('T')[0];
+
+        function registerEntry() {
+            const day = document.getElementById('dayInput').value;
+            const date = document.getElementById('dateInput').value;
+            const temperature = document.getElementById('temperatureInput').value;
+            const heartRate = document.getElementById('heartRateInput').value;
+            const humidity = document.getElementById('humidityInput').value;
+            const bloodPressure = document.getElementById('bloodPressureInput').value;
+
+            const key = `${day}_${date}`;
+            hashTable[key] = {
+                day,
+                date,
+                temperature,
+                heartRate,
+                humidity,
+                bloodPressure
+            };
+
+            // Save updated hash table to local storage
+            localStorage.setItem('hashTable', JSON.stringify(hashTable));
+
+            clearInputs();
+        }
+
+        function appendEntry() {
+            const day = document.getElementById('dayInput').value;
+            const date = document.getElementById('dateInput').value;
+            const key = `${day}_${date}`;
+
+            if (hashTable[key]) {
+                const additionalField = prompt('Enter additional field name:');
+                const additionalValue = prompt(`Enter value for ${additionalField}:`);
+                hashTable[key][additionalField] = additionalValue;
+
+                // Save updated hash table to local storage
+                localStorage.setItem('hashTable', JSON.stringify(hashTable));
+            } else {
+                alert('Entry does not exist. Register it first.');
+            }
+        }
+
+        function editEntry() {
+            const day = document.getElementById('dayInput').value;
+            const date = document.getElementById('dateInput').value;
+            const key = `${day}_${date}`;
+
+            if (hashTable[key]) {
+                const fieldToEdit = prompt('Enter field to edit (temperature, heartRate, humidity, bloodPressure):');
+                const newValue = prompt(`Enter new value for ${fieldToEdit}:`);
+                hashTable[key][fieldToEdit] = newValue;
+
+                // Save updated hash table to local storage
+                localStorage.setItem('hashTable', JSON.stringify(hashTable));
+            } else {
+                alert('Entry does not exist. Register it first.');
+            }
+        }
+
+        function showTable() {
+            const tableContainer = document.getElementById('tableContainer');
+            tableContainer.innerHTML = '';
+
+            const table = document.createElement('table');
+            const headerRow = table.insertRow(0);
+
+            const headers = Object.keys(hashTable).reduce((acc, key) => {
+                return [...acc, ...Object.keys(hashTable[key])];
+            }, []);
+
+            const uniqueHeaders = Array.from(new Set(headers));
+
+            for (const header of uniqueHeaders) {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            }
+
+            for (const key in hashTable) {
+                const entry = hashTable[key];
+                const row = table.insertRow(-1);
+
+                for (const header of uniqueHeaders) {
+                    const cell = row.insertCell(-1);
+                    cell.textContent = entry[header] || '';
+                }
+            }
+
+            tableContainer.appendChild(table);
+        }
+
+        function queryEntry() {
+            const selectedKey = document.getElementById('keySelect').value;
+            const day = document.getElementById('dayInput').value;
+            const date = document.getElementById('dateInput').value;
+            const key = `${day}_${date}`;
+
+            if (hashTable[key]) {
+                alert(`${selectedKey}: ${hashTable[key][selectedKey]}`);
+            } else {
+                alert('Entry does not exist.');
+            }
+        }
+
+        function clearInputs() {
+            document.getElementById('temperatureInput').value = '';
+            document.getElementById('heartRateInput').value = '';
+            document.getElementById('humidityInput').value = '';
+            document.getElementById('bloodPressureInput').value = '';
+        }
+
+        function getDayOfWeek(dayIndex) {
+            const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return daysOfWeek[dayIndex];
+        }
+    </script>
+
+</body>
+
+</html>
