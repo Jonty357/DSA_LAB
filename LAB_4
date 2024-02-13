@@ -1,0 +1,98 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox
+import networkx as nx
+
+class HostelGraph(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("IITG Hostel Trip")
+        self.layout = QVBoxLayout()
+
+        # Predefined distances between hostels
+        self.distances = {
+            "Hostel A": {"Hostel B": 3, "Hostel C": 2, "Hostel D": 4, "Hostel E": 5, "Hostel F": 6},
+            "Hostel B": {"Hostel A": 3, "Hostel C": 2, "Hostel D": 4, "Hostel E": 5, "Hostel F": 6},
+            "Hostel C": {"Hostel A": 2, "Hostel B": 2, "Hostel D": 4, "Hostel E": 5, "Hostel F": 6},
+            "Hostel D": {"Hostel A": 4, "Hostel B": 4, "Hostel C": 4, "Hostel E": 5, "Hostel F": 6},
+            "Hostel E": {"Hostel A": 5, "Hostel B": 5, "Hostel C": 5, "Hostel D": 5, "Hostel F": 6},
+            "Hostel F": {"Hostel A": 6, "Hostel B": 6, "Hostel C": 6, "Hostel D": 6, "Hostel E": 6}
+        }
+
+        # Hostel Names
+        self.hostel_names = list(self.distances.keys())
+
+        # Hostel Graph Initialization
+        self.hostel_graph = nx.Graph()
+        self.hostel_graph.add_nodes_from(self.hostel_names)
+        self.hostel_graph.add_weighted_edges_from([(src, dest, self.distances[src][dest]) for src in self.hostel_names for dest in self.distances[src]])
+
+        # Hostel Buttons
+        self.hostel_buttons = []
+        self.init_hostel_buttons()
+
+        # Source and Destination Hostel Selection
+        self.source_combo = QComboBox()
+        self.destination_combo = QComboBox()
+        self.init_combo_boxes()
+
+        # Find Path Button
+        self.find_path_button = QPushButton("Find Path")
+        self.find_path_button.clicked.connect(self.find_path)
+
+        # Results Label
+        self.results_label = QLabel()
+
+        # Add Widgets to Layout
+        self.layout.addWidget(QLabel("Source Hostel:"))
+        self.layout.addWidget(self.source_combo)
+        self.layout.addWidget(QLabel("Destination Hostel:"))
+        self.layout.addWidget(self.destination_combo)
+        self.layout.addWidget(self.find_path_button)
+        self.layout.addWidget(self.results_label)
+
+        self.setLayout(self.layout)
+
+    def init_hostel_buttons(self):
+        hbox = QHBoxLayout()
+        for name in self.hostel_names:
+            button = QPushButton(name)
+            hbox.addWidget(button)
+            self.hostel_buttons.append(button)
+            button.clicked.connect(lambda checked, name=name: self.handle_hostel_click(name))
+        self.layout.addLayout(hbox)
+
+    def init_combo_boxes(self):
+        self.source_combo.addItems(self.hostel_names)
+        self.destination_combo.addItems(self.hostel_names)
+
+    def handle_hostel_click(self, hostel_name):
+        print(f"Clicked on {hostel_name}")
+
+    def find_path(self):
+        source_hostel = self.source_combo.currentText()
+        destination_hostel = self.destination_combo.currentText()
+
+        # Find the shortest path
+        shortest_path = nx.shortest_path(self.hostel_graph, source=source_hostel, target=destination_hostel)
+        
+        # Calculate the total distance to return back to the source hostel
+        circumference = nx.dijkstra_path_length(self.hostel_graph, source=destination_hostel, target=source_hostel)
+        
+        # Find the minimum distance
+        min_distance = nx.dijkstra_path_length(self.hostel_graph, source=source_hostel, target=destination_hostel)
+
+        # Calculate radius as half of the circumference
+        radius = circumference / 2
+
+        # Diameter is the maximum shortest distance between any two hostels on the path
+        diameter = max(self.distances[source][dest] for source, dest in zip(shortest_path[:-1], shortest_path[1:]))
+
+        self.results_label.setText(f"Radius: {radius}, Diameter: {diameter}, Circumference: {circumference}, "
+                                    f"Shortest Path: {shortest_path}, Minimum Distance: {min_distance}")
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = HostelGraph()
+    window.show()
+    sys.exit(app.exec_())
